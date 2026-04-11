@@ -1,0 +1,3 @@
+PKG_CPPFLAGS = $(shell quantlib-config --cflags) -I/opt/homebrew/include -I/opt/homebrew/opt/boost/include
+PKG_LIBS = $(shell quantlib-config --libs)
+CXX_STD = CXX17
