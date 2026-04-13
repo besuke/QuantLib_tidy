@@ -651,67 +651,89 @@ show_tbl(
 
 tibor6m_for_asw <- Tibor(period_months(6), tona_bundle$curve_handle)
 
+# ------------------------------------------------------------
+# 10. AssetSwap (constructor check only)
+# ------------------------------------------------------------
+
+floating_schedule_asw <- Schedule(
+  settle_date,
+  maturity_date,
+  period_years(1),
+  jp_calendar,
+  "Unadjusted",
+  "Unadjusted",
+  "Backward",
+  FALSE
+)
+
+clean_price_asw <- 97.0
+credit_spread_asw <- 1.3 / 100
+is_par_asset_swap <- TRUE
+pay_fixed_rate <- TRUE
+
+show_tbl(
+  make_schedule_tbl(floating_schedule_asw),
+  "AssetSwap floating schedule",
+  n = 20
+)
+
+tibor6m_for_asw <- Tibor(period_months(6), tona_bundle$curve_handle)
+
 try_make_asset_swap <- function() {
-  candidate_builders <- list(
-    function() {
-      AssetSwap(
-        pay_fixed_rate,
-        bond_obj,
-        clean_price_asw,
-        tibor6m_for_asw,
-        credit_spread_asw,
-        floating_schedule_asw,
-        dc_a365,
-        is_par_asset_swap
-      )
-    },
-    function() {
-      AssetSwap(
-        pay_fixed_rate,
-        bond_obj,
-        clean_price_asw,
-        tibor6m_for_asw,
-        credit_spread_asw,
-        floating_schedule_asw,
-        is_par_asset_swap
-      )
-    },
-    function() {
-      AssetSwap(
-        pay_fixed_rate,
-        bond_obj,
-        clean_price_asw,
-        tibor6m_for_asw,
-        credit_spread_asw,
-        is_par_asset_swap
-      )
-    },
-    function() {
-      AssetSwap(
-        bond_obj,
-        clean_price_asw,
-        tibor6m_for_asw,
-        credit_spread_asw,
-        floating_schedule_asw,
-        dc_a365,
-        pay_fixed_rate,
-        is_par_asset_swap
-      )
-    }
+  tryCatch(
+    AssetSwap__SWIG_0(
+      pay_fixed_rate,
+      bond_obj,
+      clean_price_asw,
+      tibor6m_for_asw,
+      credit_spread_asw,
+      floating_schedule_asw,
+      dc_a365,
+      is_par_asset_swap,
+      1.0,
+      100.0,
+      maturity_date
+    ),
+    error = function(e) NULL
   )
-  
-  for (builder in candidate_builders) {
-    obj <- tryCatch(builder(), error = function(e) NULL)
-    if (!is.null(obj)) {
-      return(obj)
-    }
-  }
-  
-  NULL
 }
 
 asset_swap_obj <- try_make_asset_swap()
 
+if (is.null(asset_swap_obj)) {
+  show_tbl(
+    tibble(
+      note = "AssetSwap__SWIG_0 constructor failed in this build",
+      fallback = "Use AS spread proxy scenarios from section 9"
+    ),
+    "AssetSwap demo"
+  )
+} else {
+  show_tbl(
+    tibble(
+      note = c(
+        "AssetSwap__SWIG_0 constructor succeeded",
+        "Pricing engine attachment is disabled because it crashes this local R build",
+        "Use AS spread proxy scenarios from section 9 for stable analysis"
+      )
+    ),
+    "AssetSwap demo"
+  )
+}
+
+asset_swap_obj <- AssetSwap__SWIG_0(
+  pay_fixed_rate,
+  bond_obj,
+  clean_price_asw,
+  tibor6m_for_asw,
+  credit_spread_asw,
+  floating_schedule_asw,
+  dc_a365,
+  is_par_asset_swap,
+  1.0,
+  100.0,
+  maturity_date
+)
 if (is.null(asset_swap_obj)) {
   show_tbl(
     tibble(
@@ -751,6 +773,30 @@ if (is.null(asset_swap_obj)) {
     sep = ""
   )
 }
+asset_swap_engine <- DiscountingSwapEngine(tona_bundle$curve_handle)
+Instrument_setPricingEngine(asset_swap_obj, asset_swap_engine)
+AssetSwap_fairSpread(asset_swap_obj)
+AssetSwap_fairCleanPrice(asset_swap_obj)
+asset_swap_obj
+asset_swap_obj
+cat(
+  "Asset swap fair spread for clean price ",
+  sprintf("%.2f", clean_price_asw),
+  ": ",
+  sprintf("%.6f%%", 100 * asset_swap_obj$fairSpread()),
+  "\n",
+  sep = ""
+)
 
+cat(
+  "Fair clean price for spread ",
+  sprintf("%.6f%%", 100 * credit_spread_asw),
+  ": ",
+  sprintf("%.6f", asset_swap_obj$fairCleanPrice()),
+  "\n",
+  sep = ""
+)
+ls("package:QuantLib", pattern = "AssetSwap")
+getAnywhere("AssetSwap__SWIG_0")
 cat("\nch04 bonds rewrite completed successfully.\n")
-
+# 
