@@ -3,60 +3,6 @@ suppressMessages({
   library(tidyverse)
 })
 
-# ============================================================
-# ch03.R
-# ------------------------------------------------------------
-# RFR スワップ / OIS / マルチカーブのうち、まず OIS 部分を
-# R + QuantLib(SWIG) 向けに tidyverse 風で書き直した版。
-#
-# この版で扱う内容:
-# 1. TONA OIS curve
-# 2. TONA OIS valuation
-# 3. daily OIS forward check
-# 4. fixing 登録後の再評価
-# 5. SOFR OIS curve
-# 6. SOFR OIS valuation
-# 7. optional: Term SOFR basis bootstrap
-#
-# 方針:
-# - Date は DateParser_parseISO() を使う
-# - curve の zero は discount から自前計算する
-# - nodes()/dates() への依存を減らす
-# - fixing は valuation 前後で比較できるようにする
-# ============================================================
-
-# ------------------------------------------------------------
-# 0. Utility helpers
-# ------------------------------------------------------------
-
-ql_date <- function(x) {
-  if (inherits(x, "POSIXt")) x <- format(as.Date(x), "%Y-%m-%d")
-  if (inherits(x, "Date"))   x <- format(x, "%Y-%m-%d")
-  if (is.character(x) && length(x) == 1L) return(DateParser_parseISO(x))
-  x
-}
-
-ql_iso <- function(x) {
-  tryCatch(Date_ISO(x), error = function(e) as.character(x))
-}
-
-ql_chr <- function(x) {
-  tryCatch(
-    x$`__str__`(),
-    error = function(e1) {
-      tryCatch(as.character(x), error = function(e2) "<unprintable>")
-    }
-  )
-}
-
-show_tbl <- function(tbl, title = NULL, n = 10) {
-  if (!is.null(title)) {
-    cat("\n", strrep("=", 72), "\n", title, "\n", strrep("=", 72), "\n", sep = "")
-  }
-  print(dplyr::slice_head(tbl, n = n))
-  invisible(tbl)
-}
-
 set_eval_date <- function(eval_date) {
   Settings_instance()$setEvaluationDate(ql_date(eval_date))
 }
